@@ -1,5 +1,6 @@
 from datetime import datetime
 import pytz
+import tsl2591
 from tools.connection import Connection
 
 class SunSensor():
@@ -12,10 +13,12 @@ class SunSensor():
         """Read the soil moisture level and return it as a dictionary"""
         now = datetime.now(pytz.timezone('UTC')).astimezone(pytz.timezone("US/Pacific")).strftime("%Y-%m-%d %H:%M:%S")
         try:
-            sun_reading = None
+            tsl = tsl2591.Tsl2591()  # initialize
+            full, ir = tsl.get_full_luminosity()  # read raw values (full spectrum and ir spectrum)
+            lux = tsl.calculate_lux(full, ir)  # convert raw values to lux
             return {'task': 'sun_reading',
                     'status': 'success',
-                    'value_numeric': sun_reading,
+                    'value_numeric': lux,
                     'value_enum': None,
                     'timestamp': now}
         except BaseException as err:
