@@ -1,0 +1,4 @@
+picamera
+pytz
+Adafruit_DHT
+Adafruit_MCP3008
