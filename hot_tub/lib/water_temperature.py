@@ -9,8 +9,8 @@ class WaterTemperature:
     @staticmethod
     def measure():
         """Read the water temperature and return it as a dictionary"""
-        tz = pytz.timezone('UTC').astimezone(pytz.timezone("US/Pacific"))
-        now = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
+        time = datetime.now(pytz.timezone('UTC')).astimezone(pytz.timezone("US/Pacific"))
+        now = time.strftime("%Y-%m-%d %H:%M:%S")
         water_temp_f = None
 
         try:

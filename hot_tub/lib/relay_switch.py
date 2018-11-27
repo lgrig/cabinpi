@@ -3,8 +3,8 @@ from datetime import datetime
 from gpiozero import LED
 import pytz
 
-tz = pytz.timezone('UTC').astimezone(pytz.timezone("US/Pacific"))
-now = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
+time = datetime.now(pytz.timezone('UTC')).astimezone(pytz.timezone("US/Pacific"))
+now = time.strftime("%Y-%m-%d %H:%M:%S")
 
 #we will need to be constantly feeding the gpio pin current for it to be active
 
