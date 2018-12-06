@@ -2,6 +2,7 @@
 from datetime import datetime
 from time import sleep
 import gpiozero
+import RPi.GPIO as GPIO
 from gpiozero.pins import Factory
 import pytz
 
@@ -17,16 +18,21 @@ class RelaySwitch:
 
     def switch_on(self):
         """Turn on the relay switch, it will continue to run"""
-        return {
-                'task': self.relay.on,
-                'value_numeric': 1,
-                'value_enum': 'gpio pin {}'.format(self.gpio_pin),
-                'timestamp': now
-        }
+        try:
+            while True:
+                self.relay.on()
+        except BaseException as err:
+            print(err)
+        # return {
+        #         'task': self.relay.on,
+        #         'value_numeric': 1,
+        #         'value_enum': 'gpio pin {}'.format(self.gpio_pin),
+        #         'timestamp': now
+        # }
 
     def switch_off(self):
         """Turn on the relay switch, it will continue to run"""
-        self.relay.off()
+        GPIO.cleanup()
         return {
                 'task': self.relay.off,
                 'status': 'success',
