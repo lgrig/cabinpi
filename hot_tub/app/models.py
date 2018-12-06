@@ -23,12 +23,10 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
                 return check_password_hash(self.password_hash, password)
 
-class Transaction(db.Model):
+class GPIOTask(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    status = db.Column(db.String(64))
-    value_numeric = db.Column(db.Float)
-    value_enum = db.Column(db.String(128))
-    ts = db.Column(db.DateTime(timezone=False))
-
-    def __repr__(self):
-        return '<Trx num: {id} Status: {status}>'.format({'id': self.id, 'status': self.status})
+    name = db.Column(db.String(128), index=True)
+    status_enum = db.Column(db.String(128))
+    status_numeric = db.Column(db.Integer)
+    description = db.Column(db.String(500))
+    create_time = db.Column(db.DateTime)
