@@ -5,7 +5,6 @@ import pytz
 from app import db
 from app.logger import Logger
 from app.config import Config
-from app.models import GPIOTask
 import pygsheets
 
 logger = Logger().get_logger()

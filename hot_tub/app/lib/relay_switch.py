@@ -2,10 +2,11 @@
    If a change is detected, adjust the pin accordingly.
    Start up should take the last pin position and run pins accordingly.
 """
+from app.models import GPIOTask
 from lib import rpi_job
 class RelaySwitch(rpi_job.RPIJob):
     def __init__(self):
-        __init__.super()
+        super().__init__()
 
     def turn_on_hot_tub(self):
         db.session.add(GPIOTask('hot_tub', 'on', 1, 'turn on tub', datetime.now()))
@@ -34,5 +35,4 @@ class RelaySwitch(rpi_job.RPIJob):
 
 if __name__ == '__main__':
     #start a redis worker to the name 'hot_tub'
-    RelaySwitch().start_worker()
     RelaySwitch().redis_server()

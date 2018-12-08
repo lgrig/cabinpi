@@ -31,7 +31,7 @@ class GPIOTask(db.Model):
     description = db.Column(db.String(500))
     create_datetime = db.Column(db.DateTime)
 
-class RunTimes(db.Model):
+class RunTime(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     start_time = db.Column(db.Time, index=True)
     end_time = db.Column(db.Time, index=True)

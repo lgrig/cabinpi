@@ -1,0 +1,8 @@
+#!/bin/bash
+# launch the hot-tub rq worker, this worker will drive commands to the Power Relay
+dtoverlay=w1-gpio
+rq worker hot_tub
+# start the web server (maybe not even needed if we have the db but, whatever
+flask run
+# kick off the relay switch to make sure it's working
+python /path/to/lib/relay_switch.py 
