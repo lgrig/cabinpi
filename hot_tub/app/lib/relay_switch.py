@@ -2,76 +2,37 @@
    If a change is detected, adjust the pin accordingly.
    Start up should take the last pin position and run pins accordingly.
 """
-from datetime import datetime
-from time import sleep
-import gpiozero
-import RPi.GPIO as GPIO
-from gpiozero.pins import Factory
-import os
-import pytz
-from app import db
-from app.models import GPIOTask
-is_rpi = 'arm' in os.uname()[4][:3]
-if is_rpi:
-    import gpiozero
-    from gpiozero.pins import Factory
+from lib import rpi_job
+class RelaySwitch(rpi_job.RPIJob):
+    def __init__(self):
+        __init__.super()
 
-class RelaySwitch:
-    def __init__(self, gpio_pin=None):
-        self.gpio_pin = gpio_pin
-        if is_rpi:
-            self.relay = gpiozero.LED(self.gpio_pin)
-        else:
-            self.relay = None
-
-    def turn_on(self):
+    def turn_on_hot_tub(self):
         db.session.add(GPIOTask('hot_tub', 'on', 1, 'turn on tub', datetime.now()))
         db.session.commit()
 
-<<<<<<< HEAD
-    def switch_on(self):
+    def turn_off_hot_tub(self):
         """Turn on the relay switch, it will continue to run"""
-        try:
-            while True:
-                self.relay.on()
-        except BaseException as err:
-            print(err)
-        # return {
-        #         'task': self.relay.on,
-        #         'value_numeric': 1,
-        #         'value_enum': 'gpio pin {}'.format(self.gpio_pin),
-        #         'timestamp': now
-        # }
-
-    def switch_off(self):
-        """Turn on the relay switch, it will continue to run"""
-        GPIO.cleanup()
-        return {
-                'task': self.relay.off,
-                'status': 'success',
-                'value_numeric': 0,
-                'value_enum': 'gpio pin {}'.format(self.gpio_pin),
-                'timestamp': now
-        }
-if __name__ == '__main__':
-    switch = RelaySwitch(gpio_pin=18)
-    switch.switch_on()
-    sleep(2)
-    switch.switch_off()
-    sleep(2)
-=======
-    def turn_off(self):
         db.session.add(GPIOTask('hot_tub', 'off', 0, 'turn off tub', datetime.now()))
         db.session.commit()
 
-    def run_server(self):
-        #poll the database every 5 seconds
-        #if the database has been updated, trigger the GPIO pin
+    def redis_server(self, gpio_pin=None):
+        relay = gpiozero.LED(self.gpio_pin) if self.is_rpi else None
         while True:
-            latest = GPIOTask.query.first()
+            latest = GPIOTask.query.order_by(GPIOTask.id.desc()).first()
             if latest.status_numeric == 1:
-                self.relay.on()
+                if relay:
+                    relay.on()
+                else:
+                    logger.info("Dev Debug msg: I turned on the hot tub")
             if latest.status_numeric == 0:
-                self.relay.off()
-            sleep(5)
->>>>>>> efc701d84cfa8b7961c0bdd138fe90a7323d6007
+                if relay:
+                    relay.off()
+                else:
+                    logger.info("Dev Debug msg: I turned off the hot tub")
+            sleep(1)
+
+if __name__ == '__main__':
+    #start a redis worker to the name 'hot_tub'
+    RelaySwitch().start_worker()
+    RelaySwitch().redis_server()

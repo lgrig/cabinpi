@@ -1,8 +1,9 @@
 import sys
+import os
 from flask_login import LoginManager
 
-sys.path.append('/home/pi/development/python/cabinpi/hot_tub/')
-sys.path.append('/home/pi/development/python/cabinpi/hot_tub/app')
+sys.path.append(os.path.dirname(os.path.realpath(__file__)))
+sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/app/')
 
 from flask import Flask
 from flask_login import UserMixin
