@@ -3,7 +3,10 @@
    Start up should take the last pin position and run pins accordingly.
 """
 from app.models import GPIOTask
+from app import db
 from lib import rpi_job
+from datetime import datetime
+
 class RelaySwitch(rpi_job.RPIJob):
     def __init__(self):
         super().__init__()
@@ -16,23 +19,3 @@ class RelaySwitch(rpi_job.RPIJob):
         """Turn on the relay switch, it will continue to run"""
         db.session.add(GPIOTask('hot_tub', 'off', 0, 'turn off tub', datetime.now()))
         db.session.commit()
-
-    def redis_server(self, gpio_pin=None):
-        relay = gpiozero.LED(self.gpio_pin) if self.is_rpi else None
-        while True:
-            latest = GPIOTask.query.order_by(GPIOTask.id.desc()).first()
-            if latest.status_numeric == 1:
-                if relay:
-                    relay.on()
-                else:
-                    logger.info("Dev Debug msg: I turned on the hot tub")
-            if latest.status_numeric == 0:
-                if relay:
-                    relay.off()
-                else:
-                    logger.info("Dev Debug msg: I turned off the hot tub")
-            sleep(1)
-
-if __name__ == '__main__':
-    #start a redis worker to the name 'hot_tub'
-    RelaySwitch().redis_server()
