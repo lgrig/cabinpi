@@ -7,7 +7,9 @@ from app import models
 from app.lib import rpi_job
 from app.lib.run_time import RunTime
 from app.lib.relay_switch import RelaySwitch
+from app.lib.google_jobs import GoogleJobs
 logger = rpi_job.logger
+goog = GoogleJobs()
 
 class RelayController(rpi_job.RPIJob):
     """Overall relay controller, runs a mock server on an infinite loop redis server.
@@ -26,7 +28,7 @@ class RelayController(rpi_job.RPIJob):
         """Server to watch for relevant databse changes"""
         while True:
             #poll these less frequently, they require a google sheets server check
-            op_mode, safety_temp, laps = self.get_operation_type(), self.get_safety_temp(), 0
+            op_mode, safety_temp, laps = goog.get_operation_type(), goog.get_safety_temp(), 0
             while laps < 60:
                 current_temp = models.WaterTemp.query.order_by(models.WaterTemp.id.desc()).first()
                 latest_record = models.GPIOTask.query.order_by(models.GPIOTask.id.desc()).first()

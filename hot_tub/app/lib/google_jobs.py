@@ -6,7 +6,7 @@ import pygsheets
 from app.lib.config import Config
 class GoogleJobs:
     def __init__(self):
-        self.pyg =  
+        pass
 
     def get_hot_tub_controller(self):
         pyg = pygsheets.authorize(service_file=Config.CREDS_PATH)
