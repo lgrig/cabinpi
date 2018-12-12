@@ -21,7 +21,7 @@ class RelayController(rpi_job.RPIJob):
 
     def switch_tub(self, latest_record=None):
         """Execute gpio pin change to relay to start/stop 3v current"""
-        cur_num = latest_record.status_numeric
+        cur_num = latest_record.status_numeric if latest_record else 0
         return self.relay.on() if bool(cur_num) else self.relay.off()
 
     def redis_server(self):
