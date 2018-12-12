@@ -7,5 +7,11 @@ class Config(object):
             'sqlite:///' + os.path.join(basedir, 'app.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    CREDS_PATH = '/home/pi/development/.credentials.json'
+    def __init__(self):
+        super().__init__()
 
+    is_rpi = 'arm' in os.uname()[4][:3]
+    if is_rpi:
+        CREDS_PATH = '/home/pi/development/.credentials.json'
+    else:
+        CREDS_PATH = '/Users/Grignon/development/.credentials.json'
