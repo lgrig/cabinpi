@@ -16,15 +16,16 @@ class GoogleJobs:
     def get_times(self):
         """returns a matrix of times of format [[start_time, end_time], [start_time, end_time]]"""
         ctrl = self.get_hot_tub_controller()
-        vals_matrix = ctrl.get_named_ranges('run_times').data()
-        return [val for val in vals_matrix if bool(val[0])]
+        cells_matrix = ctrl.get_named_ranges('run_times').cells
+        vals_matrix = [[col.value for col in row] for row in cells_matrix]
+        return vals_matrix[1:] if bool(vals_matrix) else None
 
     def get_safety_temp(self):
         """returns the desired safety temperature in degrees farenheit"""
         ctrl = self.get_hot_tub_controller()
-        return ctrl.get_named_ranges('safety_temperature').data()[0][0]
+        return ctrl.get_named_ranges('safety_temperature').cells[0][0].value
 
     def get_operation_type(self):
         """returns tub run status (Turn On, Turn Off, Time Control)"""
         ctrl = self.get_hot_tub_controller()
-        return ctrl.get_named_ranges('manual_operation').data()[0][0]
+        return ctrl.get_named_ranges('manual_operation').cells[0][0].value
