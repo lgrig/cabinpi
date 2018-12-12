@@ -10,12 +10,15 @@ from datetime import datetime
 class RelaySwitch(rpi_job.RPIJob):
     def __init__(self):
         super().__init__()
+        self.template = {'name': 'hot_tub', 'status_enum': None, 'status_numeric': None, 'description': None, 'create_datetime': datetime.now()}
 
     def turn_on_hot_tub(self):
-        db.session.add(GPIOTask('hot_tub', 'on', 1, 'turn on tub', datetime.now()))
+        record = {**self.template, **{'status_enum': 'on', 'status_numeric': 1, 'description': 'turn on tub'}}
+        db.session.add(GPIOTask(**record))
         db.session.commit()
 
     def turn_off_hot_tub(self):
         """Turn on the relay switch, it will continue to run"""
-        db.session.add(GPIOTask('hot_tub', 'off', 0, 'turn off tub', datetime.now()))
+        record = {**self.template, **{'status_enum': 'off', 'status_numeric': 0, 'description': 'turn off tub'}}
+        db.session.add(GPIOTask(**record))
         db.session.commit()
