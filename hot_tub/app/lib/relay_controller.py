@@ -31,7 +31,8 @@ class RelayController(rpi_job.RPIJob):
             Schedule().refresh_times()
             op_mode, safety_temp, laps = goog.get_operation_type(), goog.get_safety_temp(), 0
             while laps < 60:
-                current_temp = models.WaterTemp.query.order_by(models.WaterTemp.id.desc()).first()
+                #current_temp = models.WaterTemp.query.order_by(models.WaterTemp.id.desc()).first()
+                current_temp = 20
                 latest_record = models.GPIOTask.query.order_by(models.GPIOTask.id.desc()).first()
                 turn_on_conds = [safety_temp > current_temp, op_mode == 'Turn On', bool(Schedule().check_time())]
                 turn_off_conds = [op_mode == 'Turn Off', not bool(Schedule().check_time())]
