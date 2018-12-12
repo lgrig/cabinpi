@@ -3,10 +3,15 @@
     Application only attempts to ping the hot_tub database every minute.
 """
 import pygsheets
+from datetime import datetime
 from app.lib.config import Config
-class GoogleJobs:
+from app.lib import rpi_job
+logger = rpi_job.logger
+
+class GoogleJobs(rpi_job.RPIJob):
     def __init__(self):
-        pass
+        super().__init__()
+        self.ctrl = self.get_hot_tub_controller()
 
     def get_hot_tub_controller(self):
         pyg = pygsheets.authorize(service_file=Config.CREDS_PATH)
@@ -15,17 +20,19 @@ class GoogleJobs:
 
     def get_times(self):
         """returns a matrix of times of format [[start_time, end_time], [start_time, end_time]]"""
-        ctrl = self.get_hot_tub_controller()
-        cells_matrix = ctrl.get_named_ranges('run_times').cells
-        vals_matrix = [[col.value for col in row] for row in cells_matrix]
-        return vals_matrix[1:] if bool(vals_matrix) else None
+        cells_matrix = self.ctrl.get_named_ranges('run_times').cells
+        vals_matrix = [[datetime.strptime(col.value, '%H:%M').time() for col in row] for row in cells_matrix[1:] if bool(row[0].value)]
+        return vals_matrix if bool(vals_matrix) else None
 
     def get_safety_temp(self):
         """returns the desired safety temperature in degrees farenheit"""
-        ctrl = self.get_hot_tub_controller()
-        return ctrl.get_named_ranges('safety_temperature').cells[0][0].value
+        return int(self.ctrl.get_named_ranges('safety_temperature').cells[0][0].value)
 
     def get_operation_type(self):
         """returns tub run status (Turn On, Turn Off, Time Control)"""
-        ctrl = self.get_hot_tub_controller()
-        return ctrl.get_named_ranges('manual_operation').cells[0][0].value
+        return self.ctrl.get_named_ranges('manual_operation').cells[0][0].value
+
+if __name__ == '__main__':
+    logger.info(GoogleJobs().get_operation_type())
+    logger.info(GoogleJobs().get_safety_temp())
+    logger.info(GoogleJobs().get_times())

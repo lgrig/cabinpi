@@ -5,7 +5,7 @@ from datetime import time
 import gpiozero
 from app import models
 from app.lib import rpi_job
-from app.lib.run_time import RunTime
+from app.lib.schedule import Schedule
 from app.lib.relay_switch import RelaySwitch
 from app.lib.google_jobs import GoogleJobs
 logger = rpi_job.logger
@@ -28,12 +28,13 @@ class RelayController(rpi_job.RPIJob):
         """Server to watch for relevant databse changes"""
         while True:
             #poll these less frequently, they require a google sheets server check
+            Schedule().refresh_times()
             op_mode, safety_temp, laps = goog.get_operation_type(), goog.get_safety_temp(), 0
             while laps < 60:
                 current_temp = models.WaterTemp.query.order_by(models.WaterTemp.id.desc()).first()
                 latest_record = models.GPIOTask.query.order_by(models.GPIOTask.id.desc()).first()
-                turn_on_conds = [safety_temp > current_temp, op_mode == 'Turn On', bool(RunTime().check_time())]
-                turn_off_conds = [op_mode == 'Turn Off', not bool(RunTime().check_time())]
+                turn_on_conds = [safety_temp > current_temp, op_mode == 'Turn On', bool(Schedule().check_time())]
+                turn_off_conds = [op_mode == 'Turn Off', not bool(Schedule().check_time())]
                 cur_num = latest_record.status_numeric
                 #if the tub is off and meets any 'on' condition write to db to turn it on
                 if not bool(cur_num) and bool(any(turn_on_conds)):
