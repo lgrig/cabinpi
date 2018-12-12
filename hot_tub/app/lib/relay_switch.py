@@ -13,12 +13,14 @@ class RelaySwitch(rpi_job.RPIJob):
         self.template = {'name': 'hot_tub', 'status_enum': None, 'status_numeric': None, 'description': None, 'create_datetime': datetime.now()}
 
     def turn_on_hot_tub(self):
-        record = self.template.update({'status_enum': 'on', 'status_numeric': 1, 'description': 'turn on tub'})
-        db.session.add(GPIOTask(**record))
+        rec = self.template
+        rec['status_enum'], rec['status_numeric'], rec['description'] = 'on', 1, 'turn on tub'
+        db.session.add(GPIOTask(**rec))
         db.session.commit()
 
     def turn_off_hot_tub(self):
         """Turn on the relay switch, it will continue to run"""
-        record = self.template.update({'status_enum': 'off', 'status_numeric': 0, 'description': 'turn off tub'})
-        db.session.add(GPIOTask(**record))
+        rec = self.template
+        rec['status_enum'], rec['status_numeric'], rec['description'] = 'off', 0, 'turn off tub'
+        db.session.add(GPIOTask(**rec))
         db.session.commit()
