@@ -1,11 +1,14 @@
 import logging
 import os
 
+loggers = {}
 class Logger:
     def __init__(self):
         pass
 
     def get_logger(self):
+        if loggers.get('hot_tub'):
+            return loggers.get('hot_tub')
         logger = logging.getLogger('hot_tub')
         logger.setLevel(logging.INFO)
 
@@ -21,5 +24,7 @@ class Logger:
 
         logger.addHandler(fh)
         logger.addHandler(ch)
+
+        loggers['hot_tub'] = logger
 
         return logger

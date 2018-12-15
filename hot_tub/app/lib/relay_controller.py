@@ -2,6 +2,9 @@
    If changes are found, execute scripts.
 """
 from datetime import time
+from datetime import datetime
+import time as t
+import pytz
 import gpiozero
 from app import models
 from app.lib import rpi_job
@@ -28,28 +31,32 @@ class RelayController(rpi_job.RPIJob):
         """Server to watch for relevant databse changes"""
         while True:
             #poll these less frequently, they require a google sheets server check
-            Schedule().refresh_times()
-            op_mode, safety_temp, laps = goog.get_operation_type(), goog.get_safety_temp(), 0
-            while laps < 60:
-                #current_temp = models.WaterTemp.query.order_by(models.WaterTemp.id.desc()).first()
-                current_temp = 20
-                latest_record = models.GPIOTask.query.order_by(models.GPIOTask.id.desc()).first()
-                logger.info(latest_record)
-                turn_on_conds = [safety_temp > current_temp, op_mode == 'Turn On', bool(Schedule().check_time())]
-                turn_off_conds = [op_mode == 'Turn Off', not bool(Schedule().check_time())]
-                cur_num = latest_record.status_numeric if latest_record else 0
-                #if the tub is off and meets any 'on' condition write to db to turn it on
-                if not bool(cur_num) and bool(any(turn_on_conds)):
-                    RelaySwitch().turn_on_hot_tub()
+            try:
+                Schedule().refresh_times()
+                op_mode, safety_temp, laps = goog.get_operation_type(), goog.get_safety_temp(), 0
+                while laps < 60:
+                    #current_temp = models.WaterTemp.query.order_by(models.WaterTemp.id.desc()).first()
+                    current_temp = 65
+                    latest_record = models.GPIOTask.query.order_by(models.GPIOTask.id.desc()).first()
+                    turn_on_conds = [safety_temp > current_temp, op_mode == 'Turn On', bool(bool(Schedule().check_time()) and op_mode == 'Time Control')]
+                    logger.debug('temp below safety: {}, op_mode_on: {}, in_run_time_window: {}'.format(*turn_on_conds))
+                    turn_off_conds = [op_mode == 'Turn Off', bool(not bool(Schedule().check_time()) and op_mode == 'Time Control')]
+                    logger.debug("op_mode_off: {}, out_of_run_time_window: {}".format(*turn_off_conds))
+                    cur_num = latest_record.status_numeric if latest_record else 0
+                    #if the tub is off and meets any 'on' condition write to db to turn it on
+                    if not bool(cur_num) and bool(any(turn_on_conds)):
+                        RelaySwitch().turn_on_hot_tub()
 
-                #if the tub is on and meets any 'off' condition write to db to turn it off
-                if bool(cur_num) and not (safety_temp > current_temp) and bool(any(turn_off_conds)):
-                    RelaySwitch().turn_off_hot_tub()
+                    #if the tub is on and meets any 'off' condition write to db to turn it off
+                    if bool(cur_num) and not bool(any(turn_on_conds)) and bool(any(turn_off_conds)):
+                        RelaySwitch().turn_off_hot_tub()
 
-                #check the database and execute the relay
-                self.switch_tub(latest_record=latest_record)
-                time.sleep(1)
-                laps += 1
+                    #check the database and execute the relay
+                    self.switch_tub(latest_record=latest_record)
+                    t.sleep(1)
+                    laps += 1
+            except ConnectionResetError:
+                pass
 
 if __name__ == '__main__':
     #start a redis worker to the name 'hot_tub'

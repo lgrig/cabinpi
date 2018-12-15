@@ -21,7 +21,11 @@ class GoogleJobs(rpi_job.RPIJob):
     def get_times(self):
         """returns a matrix of times of format [[start_time, end_time], [start_time, end_time]]"""
         cells_matrix = self.ctrl.get_named_ranges('run_times').cells
-        vals_matrix = [[datetime.strptime(col.value, '%H:%M').time() for col in row] for row in cells_matrix[1:] if bool(row[0].value)]
+        try:
+            vals_matrix = [[datetime.strptime(col.value, '%H:%M').time() for col in row] for row in cells_matrix[1:] if bool(row[0].value)]
+        except ValueError:
+            logger.info("BAD TIME INPUTS")
+            vals_matrix = None
         return vals_matrix if bool(vals_matrix) else None
 
     def get_safety_temp(self):
