@@ -1,0 +1,2 @@
+0 0 * * * /sbin/reboot 
+@reboot /home/pi/development/virtualenvs/p3/bin/python /home/pi/development/python/cabinpi/hot_tub/app/lib/relay_controller.py

@@ -1,2 +1,0 @@
-0 0 * * * /sbin/reboot 
-@reboot cd /path/to/cabinpi/hot_tub && ./on_startup
