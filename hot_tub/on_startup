@@ -1,6 +1,0 @@
-#!/bin/bash
-dtoverlay=w1-gpio
-# launch the hot-tub rq worker, this worker will drive commands to the Power Relay
-rq worker hot_tub
-# kick off the relay switch to make sure it's working
-python /path/to/lib/relay_switch.py 
