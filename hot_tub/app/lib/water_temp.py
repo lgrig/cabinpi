@@ -3,6 +3,8 @@ https://github.com/timofurrer/w1thermsensor
 The default data pin is GPIO4 (RaspPi connector pin 7), but that can be changed from 4 to x with dtoverlay=w1-gpio,gpiopin=x.
 """
 import re
+import rq
+from redis import Redis
 from app.models import WaterTemp
 from app.lib import rpi_job
 from app import db
@@ -19,7 +21,6 @@ class Temperature(rpi_job.RPIJob):
 
     def record_temperature(self):
         temp_f = sensor.get_temperature(W1ThermSensor.DEGREES_F)
-        print(temp_f)
         db.session.add(WaterTemp(temperature_f=temp_f, create_datetime=datetime.now()))
         db.session.commit()
 
@@ -27,7 +28,7 @@ class Temperature(rpi_job.RPIJob):
 def temperature_server():
     """looks for a redis worker called 'hot_tub_temp' and assigns the background job forever"""
     queue = rq.Queue('hot_tub_temp', connection=Redis.from_url('redis://'))
-    job = queue.enqueue('app.lib.water_temp.check_temp', -1)
+    job = queue.enqueue(check_temp(),-1)
 
 def check_temp():
     """Background job that is constantly measuring and recording water temperature
@@ -36,4 +37,4 @@ def check_temp():
         Temperature().record_temperature()
 
 if __name__ == '__main__':
-    temperature_server()
+    check_temp()

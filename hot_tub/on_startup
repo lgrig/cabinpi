@@ -1,5 +1,2 @@
 #!/bin/bash
-/home/pi/development/virtualenvs/p3/bin/rq worker hot_tub_temp
-# kick off the relay switch to make sure it's working
-/home/pi/development/virtualenvs/p3/bin/python /home/pi/development/python/cabinpi/hot_tub/app/lib/water_temp.py 
-/home/pi/development/virtualenvs/p3/bin/python /home/pi/pevelopment/python/cabinpi/hot_tub/app/lib/relay_controller.py
+nohup /home/pi/development/virtualenvs/p3/bin/rq worker hot_tub_temp & /home/pi/development/virtualenvs/p3/bin/python /home/pi/development/python/cabinpi/hot_tub/app/lib/water_temp.py & /home/pi/development/virtualenvs/p3/bin/python /home/pi/development/python/cabinpi/hot_tub/app/lib/relay_controller.py
