@@ -27,8 +27,20 @@ class Temperature(rpi_job.RPIJob):
 
     def record_temperature(self):
         temp_f = sensor.get_temperature(W1ThermSensor.DEGREES_F)
+        print(temp_f)
         db.session.add(WaterTemp(temperature_f=temp_f, create_datetime=datetime.now()))
         db.session.commit()
+
+def temperature_server(self):
+    """looks for a redis worker called 'hot_tub_temp' and assigns the background job forever"""
+    queue = rq.Queue('hot_tub_temp', connection=Redis.from_url('redis://'))
+    job = queue.enqueue('app.lib.water_temp.check_temp', -1)
+
+def check_temp(self):
+    """Background job that is constantly measuring and recording water temperature
+       Time delay in the file i/o is long enough to not need sleep instructions"""
+    while True:
+        Temperature().record_temperature()
 
 if __name__ == '__main__':
     Temperature().record_temperature()

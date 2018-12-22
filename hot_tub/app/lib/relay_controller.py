@@ -11,6 +11,7 @@ from app.lib import rpi_job
 from app.lib.schedule import Schedule
 from app.lib.relay_switch import RelaySwitch
 from app.lib.google_jobs import GoogleJobs
+from app.lib.water_temp import Temperature
 logger = rpi_job.logger
 goog = GoogleJobs()
 

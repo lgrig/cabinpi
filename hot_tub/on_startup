@@ -1,0 +1,5 @@
+#!/bin/bash
+rq worker hot_tub_temp
+# kick off the relay switch to make sure it's working
+python /home/pi/development/python/cabinpi/hot_tub/app/lib/water_temp.py 
+python /home/pi/pevelopment/python/cabinpi/hot_tub/app/lib/relay_controller.py
