@@ -3,7 +3,7 @@ from time import sleep
 import os
 import pytz
 from app import db
-from app.lib.logger import Logger
+from app.lib.admin.logger import Logger
 logger = Logger().get_logger()
 
 is_rpi = 'arm' in os.uname()[4][:3]

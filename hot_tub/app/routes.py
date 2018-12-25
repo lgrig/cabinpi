@@ -1,5 +1,5 @@
 from app import app
-from lib.relay_switch import RelaySwitch
+from lib.hot_tub_switch import HotTubSwitch
 from flask import render_template, flash, redirect, url_for
 from app.forms import LoginForm
 

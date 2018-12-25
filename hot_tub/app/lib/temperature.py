@@ -81,4 +81,4 @@ def check_temps():
         sleep(2)
 
 if __name__ == '__main__':
-    check_water_temp()
+    check_temps()

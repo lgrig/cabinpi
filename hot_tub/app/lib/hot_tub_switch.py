@@ -4,10 +4,10 @@
 """
 from app.models import GPIOTask
 from app import db
-from lib import rpi_job
+from lib.admin import rpi_job
 from datetime import datetime
 
-class RelaySwitch(rpi_job.RPIJob):
+class HotTubSwitch(rpi_job.RPIJob):
     def __init__(self):
         super().__init__()
         self.template = {'name': 'hot_tub', 'status_enum': None, 'status_numeric': None, 'description': None, 'create_datetime': datetime.now()}
