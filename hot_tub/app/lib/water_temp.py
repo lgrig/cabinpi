@@ -21,6 +21,7 @@ class Temperature(rpi_job.RPIJob):
 
     def record_temperature(self):
         temp_f = sensor.get_temperature(W1ThermSensor.DEGREES_F)
+        print(temp_f)
         db.session.add(WaterTemp(temperature_f=temp_f, create_datetime=datetime.now()))
         db.session.commit()
 
