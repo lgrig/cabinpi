@@ -40,3 +40,8 @@ class WaterTemp(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     temperature_f = db.Column(db.Float(precision=2, asdecimal=True))
     create_datetime = db.Column(db.DateTime)
+
+class BoxTemp(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    temperature_f = db.Column(db.Float(precision=2, asdecimal=True))
+    create_datetime = db.Column(db.DateTime)
