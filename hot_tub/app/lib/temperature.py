@@ -6,9 +6,8 @@ import re
 import rq
 from redis import Redis
 from app.models import WaterTemp, BoxTemp
-from app.lib import rpi_job
+from app.lib.admin import rpi_job
 from app import db
-from lib import rpi_job
 from w1thermsensor import W1ThermSensor
 from time import sleep
 from datetime import datetime
@@ -27,9 +26,10 @@ class Temperature(rpi_job.RPIJob):
         start here - http://www.circuitbasics.com/raspberry-pi-ds18b20-temperature-sensor-tutorial/
         dtoverly settings differ from those shown in this tutorial.
         """
-        temp_f = water.get_temperature(W1ThermSensor.DEGREES_F)
+        temp_f = round(water.get_temperature(W1ThermSensor.DEGREES_F), 2)
         db.session.add(WaterTemp(temperature_f=temp_f, create_datetime=datetime.now()))
         db.session.commit()
+        return temp_f
 
     def record_box_temp(self, pin=17):
         """Box temp is recorded to ensure that the solid state relay isn't overheating.
@@ -38,9 +38,10 @@ class Temperature(rpi_job.RPIJob):
 
            This module seems to hang if called too frequently, so there's a delay added at the end
         """
-        humidity, temp_c = Adafruit_DHT.read_entry(box, pin)
-        temp_f = temp_c * 9/5.0 + 32
-        db.session.add(Boxtemp(temperature_f=temp_f, create_datetime=datetime.now()))
+        humidity, temp_c = Adafruit_DHT.read_retry(box, pin)
+        temp_f = round(temp_c * 9/5.0 + 32, 2)
+        db.session.add(BoxTemp(temperature_f=temp_f, create_datetime=datetime.now()))
+        return temp_f
 
 #RQ Worker Server setup
 def water_temp_server():
@@ -69,12 +70,14 @@ def check_temps():
     """Background job that is constantly measuring and recording temperatures"""
     while True:
         try:
-            Temperature().record_water_temp()
+            wtmp = Temperature().record_water_temp()
+            logger.info("Water: {}".format(wtmp))
         except BaseException as err:
             logger.error(err)
 
         try:
-            Temperature().record_box_temp()
+            btmp=Temperature().record_box_temp()
+            logger.info("Box: {}".format(btmp))
         except BaseException as err:
             logger.error(err)
 

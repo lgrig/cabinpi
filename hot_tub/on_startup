@@ -1,2 +1,2 @@
 #!/bin/bash
-nohup /home/pi/development/virtualenvs/p3/bin/rq worker hot_tub_temp & /home/pi/development/virtualenvs/p3/bin/python /home/pi/development/python/cabinpi/hot_tub/app/lib/water_temp.py & /home/pi/development/virtualenvs/p3/bin/python /home/pi/development/python/cabinpi/hot_tub/app/lib/relay_controller.py
+nohup /home/pi/development/virtualenvs/p3/bin/rq worker hot_tub_temp & /home/pi/development/virtualenvs/p3/bin/python /home/pi/development/python/cabinpi/hot_tub/app/lib/temperature.py & /home/pi/development/virtualenvs/p3/bin/python /home/pi/development/python/cabinpi/hot_tub/app/lib/relay_controller.py

@@ -1,0 +1,3 @@
+#define REDIS_GIT_SHA1 "15a57352"
+#define REDIS_GIT_DIRTY "86"
+#define REDIS_BUILD_ID "raspberrypi-1543380740"
