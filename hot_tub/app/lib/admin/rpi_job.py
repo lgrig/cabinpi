@@ -1,7 +1,6 @@
 from datetime import datetime
 from time import sleep
 import os
-import pytz
 from app import db
 from app.lib.admin.logger import Logger
 logger = Logger().get_logger()

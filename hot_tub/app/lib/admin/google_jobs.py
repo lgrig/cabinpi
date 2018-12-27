@@ -45,6 +45,12 @@ class GoogleJobs(rpi_job.RPIJob):
         ws.clear()
         ws.update_values('A1', records)
 
+    def write_summary_value(self, cell=None, value=None):
+        #records needs to be a list of lists
+        #first nested list needs to be headers
+        ws = self.sheet.worksheet_by_title('Summary')
+        ws.update_value(cell, value)
+
 if __name__ == '__main__':
     logger.info(GoogleJobs().get_operation_type())
     logger.info(GoogleJobs().get_safety_temp())
