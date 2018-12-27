@@ -21,17 +21,17 @@ class Temperature(rpi_job.RPIJob):
     def __init__(self):
         super().__init__()
 
-    def record_water_temp(self):
+    def record_water_temp(self, rec_time=datetime.now()):
         """Water temperature sensor works off of the 1-Wire parasitic setup.
         start here - http://www.circuitbasics.com/raspberry-pi-ds18b20-temperature-sensor-tutorial/
         dtoverly settings differ from those shown in this tutorial.
         """
         temp_f = round(water.get_temperature(W1ThermSensor.DEGREES_F), 2)
-        db.session.add(WaterTemp(temperature_f=temp_f, create_datetime=datetime.now()))
+        db.session.add(WaterTemp(temperature_f=temp_f, create_datetime=rec_time))
         db.session.commit()
         return temp_f
 
-    def record_box_temp(self, pin=17):
+    def record_box_temp(self, pin=17, rec_time=datetime.now()):
         """Box temp is recorded to ensure that the solid state relay isn't overheating.
            If it overheats and burns down the house, that would suck.
            Because the 1-wire runs correctly on GPIO 4, we moved this one to GPIO 17
@@ -40,47 +40,23 @@ class Temperature(rpi_job.RPIJob):
         """
         humidity, temp_c = Adafruit_DHT.read_retry(box, pin)
         temp_f = round(temp_c * 9/5.0 + 32, 2)
-        db.session.add(BoxTemp(temperature_f=temp_f, create_datetime=datetime.now()))
+        db.session.add(BoxTemp(temperature_f=temp_f, create_datetime=rec_time))
         return temp_f
 
-#RQ Worker Server setup
-def water_temp_server():
-    """looks for a redis worker called 'hot_tub_temp' and assigns the background job forever"""
-    queue = rq.Queue('hot_tub_temp', connection=Redis.from_url('redis://'))
-    job = queue.enqueue(check_water_temp(),-1)
-
-def box_temp_server():
-    """looks for a redis worker called 'hot_tub_temp' and assigns the background job forever"""
-    queue = rq.Queue('hot_tub_temp', connection=Redis.from_url('redis://'))
-    job = queue.enqueue(check_box_temp(),-1)
-
-def check_water_temp():
-    """Background job that is constantly measuring and recording water temperature
-       Time delay in the file i/o is long enough to not need sleep instructions"""
-    while True:
-        Temperature().record_water_temp()
-
-def check_box_temp():
-    """Background job that is constantly measuring and recording water temperature
-       Time delay in the file i/o is long enough to not need sleep instructions"""
-    while True:
-        Temperature().record_box_temp()
-
 def check_temps():
-    """Background job that is constantly measuring and recording temperatures"""
+    """Background job that is constantly measuring and recording temperatures.
+       Lined up the times to make the graphs prettier"""
     while True:
+        rec_time = datetime.now()
         try:
-            wtmp = Temperature().record_water_temp()
-            logger.info("Water: {}".format(wtmp))
+            wtmp = Temperature().record_water_temp(rec_time=rec_time)
         except BaseException as err:
             logger.error(err)
 
         try:
-            btmp=Temperature().record_box_temp()
-            logger.info("Box: {}".format(btmp))
+            btmp=Temperature().record_box_temp(rec_time=rec_time)
         except BaseException as err:
             logger.error(err)
-
         sleep(2)
 
 if __name__ == '__main__':

@@ -1,7 +1,7 @@
 from datetime import datetime
 from pytz import timezone
 from app.models import RunTime
-from app.lib.google_jobs import GoogleJobs
+from app.lib.admin.google_jobs import GoogleJobs
 from app import db, models
 from app.lib import rpi_job
 logger = rpi_job.logger
