@@ -39,7 +39,7 @@ class Temperature(rpi_job.RPIJob):
            This module seems to hang if called too frequently, so there's a delay added at the end
         """
         humidity, temp_c = Adafruit_DHT.read_retry(box, pin)
-        temp_f = round(temp_c * 9/5.0 + 32, 2)
+        temp_f = round(temp_c * 9/5.0 + 32, 2) if temp_c else None
         db.session.add(BoxTemp(temperature_f=temp_f, create_datetime=rec_time))
         return temp_f
 
