@@ -22,7 +22,7 @@ class Temperature(rpi_job.RPIJob):
     def __init__(self):
         super().__init__()
 
-    def record_water_temp(self, rec_time=None):
+    def record_water_temp(self, rec_time=datetime.now(timezone('America/Los_Angeles'))):
         """Water temperature sensor works off of the 1-Wire parasitic setup.
         start here - http://www.circuitbasics.com/raspberry-pi-ds18b20-temperature-sensor-tutorial/
         dtoverly settings differ from those shown in this tutorial.
@@ -32,7 +32,7 @@ class Temperature(rpi_job.RPIJob):
         db.session.commit()
         return temp_f
 
-    def record_box_temp(self, pin=17, rec_time=None):
+    def record_box_temp(self, pin=17, rec_time=datetime.now(timezone('America/Los_Angeles'))):
         """Box temp is recorded to ensure that the solid state relay isn't overheating.
            If it overheats and burns down the house, that would suck.
            Because the 1-wire runs correctly on GPIO 4, we moved this one to GPIO 17
