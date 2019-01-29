@@ -3,4 +3,6 @@ redis-stable/
 *.log
 .credentials.json
 .config.json
+config.json
+/nest/config.json
 *.out
