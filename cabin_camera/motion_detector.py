@@ -5,11 +5,13 @@ import time
 from queue import Queue
 from threading import Thread
 from datetime import datetime
-import logging
 from PIL import Image
+from lib.logger import Logger
+from lib.config import Config
 import picamera
 import dropbox
 
+logger = Logger("cabin_camera").get_logger()
 #TO DO!
 ### SET A LIMIT ON IMAGES UNLESS MAJOR PIXEL CHANGES
 ### ADD LOGGING FOR NUMBER OF CHANGED PIXELS
@@ -19,37 +21,78 @@ import dropbox
 # Sensitivity (how many changed pixels before capturing an image)
 # ForceCapture (whether to force an image to be captured every forceCaptureTime seconds)
 class CabinCamera():
+    force_capture = True
+    force_capture_time = 3600
+    test_width = 100
+    test_height = 75
+    sensitivity = 0.05 #expressed as fraction of pixels changed
+    save_width = 1280
+    save_height = 960
+    disk_space_to_reserve = 40 * 1024 * 1024 # Keep 40 mb free on disk
+
     def __init__(self):
-
-        self.config = json.load(open(os.path.dirname(os.path.realpath(__file__)) + '/.config.json'))
-        self.threshold = 20
-
-        #Note, test images are 100 * 75, 7500 pixels, sensitivty is in pixels
-        self.sensitivity = 750
-        self.force_capture = True
-        # Hourly
-        self.force_capture_time = 3600
-
-        # File settings
-        self.save_width = 1280
-        self.save_height = 960
-        self.disk_space_to_reserve = 40 * 1024 * 1024 # Keep 40 mb free on disk
-        self.save_path = '/home/pi/development/python/cabin_camera/photos/'
-
-        #camera settings
-        self.camera = picamera.PiCamera()
-        self.camera.start_preview()
-        self.camera.resolution = (100, 75)
-        self.last_capture = None
-
+        logger.info('starting the Camera')
         #Remote Worker setup
         self.q = Queue()
         self.workers = 1
-        #Logger setup
-        logger_config = '/Users/Grignon/development/python/cabinpi/cabin_camera/logs/logging_config.json'
-        logging.config.dictConfig(json.load(open(logger_config, 'rt')))
+        self.uploader = UploadPhoto()
+        self.capture = Capture()
+        self.last_capture = None
 
-    # Capture a small test image (for motion detection)
+    def set_last_capture(self):
+        self.last_capture = time.time()
+
+    def run(self):
+        logger.info('starting dbx upload worker')
+        self.uploader.start_dbx_upload_worker()
+
+        retries = 0
+        while retries <= 10:
+            try:
+                _, buffer1 = self.capture.capture_test_image()
+                self.set_last_capture()
+                while True:
+                    _, buffer2 = self.capture.capture_test_image()
+                    pix_diff = self.check_pixel_difference(buffer1, buffer2)['pix_diff']
+                    if pix_diff/(self.test_width*self.test_height) > self.sensitivity:
+                        self.capture.capture_full_image()
+                    buffer1 = buffer2
+            except BaseException as err:
+                logger.error("retrying after failure: %s", err)
+                retries += 1
+
+    def check_pixel_difference(self, img1=None, img2=None, threshold=None):
+        """
+        Identifies and counts pixel changes.
+        Note: test images are 100 * 75, 7500 pixels, sensitivty is in pixels
+        image is currently set to buffer only, need to reset to look at jpgs too.
+        Need to build back-testing into this for sensitivity analysis.
+        """
+        threshold = threshold or 20
+        changed_pixels, changed_coords = 0, []
+        for x_coord in range(0, self.test_width):
+            for y_coord in range(0, self.test_height):
+                # [1] corresponds to green channel (highest quality)
+                # what are the possible values for changed pixels?
+                pixdiff = abs(img1[x_coord, y_coord][1] - img2[x_coord, y_coord][1])
+                if pixdiff > threshold:
+                    changed_pixels += 1
+                    changed_coords.append((x_coord, y_coord))
+        return {'pix_diff': changed_pixels, 'changed_coords': changed_coords}
+
+class Capture(CabinCamera):
+    save_path = '/home/pi/development/python/cabin_camera/photos/'
+    file_fmt = lambda x: "capture-%04d%02d%02d-%02d%02d.jpg" % (x.year, x.month, x.day, x.hour, x.minute)
+    def __init__(self):
+        super().__init__()
+        self.set_camera()
+        self.last_capture = None
+
+    def set_camera(self):
+        self.camera = picamera.PiCamera()
+        self.camera.start_preview()
+        self.camera.resolution = (self.test_width, self.test_height)
+
     def capture_test_image(self):
         """Take a small shitty image to test compare pixels against"""
         stream = io.BytesIO()
@@ -60,38 +103,28 @@ class CabinCamera():
         stream.close()
         return img, buf_out
 
-    def save_full_image(self):
+    def capture_full_image(self):
         """Save full sized image to disk, pass to dbx_upload_worker"""
-        now = datetime.now()
-        fmt = (now.year, now.month, now.day, now.hour, now.minute)
-        filename = "capture-%04d%02d%02d-%02d%02d%02d.jpg" % (fmt)
-        file_path = self.save_path + filename
+        file_path = self.save_path + self.file_fmt(datetime.now())
         self.camera.resolution = (self.save_width, self.save_height)
         self.camera.capture(file_path)
-        self.last_capture = time.time()
         self.q.put(file_path)
 
-    ###NOTE THIS IS AN UNUSED FUNCTION AT THIS TIME###
-    def keep_disk_space_free(self, bytes_to_reserve=None):
-        """Delete files if not enough disk space until enough disk space"""
-        def get_free_space():
-            """Check current disk space"""
-            return os.statvfs(".").f_bavail * os.statvfs(".").f_frsize
-        logger = logging.getLogger('default')
-        if get_free_space() < bytes_to_reserve:
-            for filename in sorted(os.listdir(".")):
-                if filename.startswith("capture") and filename.endswith(".jpg"):
-                    os.remove(filename)
-                    logger.warn("Not enough space: Deleted %s", filename)
-                    if get_free_space() > bytes_to_reserve:
-                        return
+        self.set_last_capture()
+
+class UploadPhoto(CabinCamera):
+    def __init__(self):
+        super().__init__()
+
+    def start_dbx_upload_worker(self):
+        """Worker factory"""
+        worker = Thread(target=self.upload, args=(self.q,))
+        worker.setDaemon(True)
+        worker.start()
 
     def upload(self):
         """Upload files in folder to dropbox"""
-        logger = logging.getLogger('default')
-        dbx = dropbox.Dropbox(self.config['dropbox']['token'])
-        #THIS SEEMS OUT OF PLACE, WHY INFINITY LOOP?
-        #REMOVING INFINITY LOOP FOR NOW?
+        dbx = dropbox.Dropbox(Config.config['dropbox']['token'])
         #while True:
         filepath = self.q.get()
         with open(filepath, 'rb') as dbfile:
@@ -101,50 +134,6 @@ class CabinCamera():
         self.q.task_done()
         logger.info("uploaded to dbx: %s", dbx_path)
         return dbx_path
-
-    def start_dbx_upload_worker(self):
-        """Worker factory"""
-        worker = Thread(target=self.upload, args=(self.q,))
-        worker.setDaemon(True)
-        worker.start()
-
-    def check_force_capture(self):
-        """T/F if it's been longer than the force capture time and if force capture is set"""
-        return self.force_capture and time.time() - self.last_capture > self.force_capture_time
-
-    def check_pixel_difference(self, buf_1, buf_2):
-        """Identifies and counts pixel changes"""
-        changed_pixels = 0
-        changed_coords = []
-        for x_coord in range(0, 100):
-            for y_coord in range(0, 75):
-                # Just check green channel as it's the highest quality channel
-                pixdiff = abs(buf_1[x_coord, y_coord][1] - buf_2[x_coord, y_coord][1])
-                if pixdiff > self.threshold:
-                    changed_pixels += 1
-                    changed_coords.append((x_coord, y_coord))
-        return {'pix_diff': changed_pixels, 'changed_coords': changed_coords}
-
-    def run(self):
-        logger = logging.getLogger('default')
-        retries = 0
-        while retries <= 10:
-            try:
-                logger.info('starting camera')
-                self.start_dbx_upload_worker()
-                _, buffer1 = self.capture_test_image()
-                self.last_capture = time.time()
-                while True:
-                    _, buffer2 = self.capture_test_image()
-                    pix_diff = self.check_pixel_difference(buffer1, buffer2)['pix_diff']
-                    force_capture = self.check_force_capture()
-                    if pix_diff > self.sensitivity or force_capture:
-                        self.save_full_image()
-                        logger.info('force_capture: %s, pix_diff: %s', force_capture, pix_diff)
-                    buffer1 = buffer2
-            except BaseException as err:
-                logger.error("retrying after failure: %s", err)
-                retries += 1
 
 if __name__ == '__main__':
     CabinCamera().run()
