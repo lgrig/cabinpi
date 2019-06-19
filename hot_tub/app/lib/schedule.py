@@ -2,14 +2,13 @@ from datetime import datetime
 from pytz import timezone
 from app.models import RunTime
 from app import db, models
-from app.lib.admin.google_jobs import GoogleJobs
 from app.lib.admin import rpi_job
 logger = rpi_job.logger
 
-goog = GoogleJobs()
 class Schedule(rpi_job.RPIJob):
     def __init__(self):
         super().__init__()
+
 
     def refresh_times(self):
         times = goog.get_times()
@@ -23,6 +22,7 @@ class Schedule(rpi_job.RPIJob):
             db.session.commit()
         return times
 
+
     def check_time(self):
         times = models.RunTime.query.all()
         now_time = datetime.now(timezone('America/Los_Angeles')).time()
@@ -30,6 +30,8 @@ class Schedule(rpi_job.RPIJob):
             if now_time > time.start_time and now_time < time.end_time:
                 return True
         return False
+
+
 if __name__ == '__main__':
     sched = Schedule()
     sched.refresh_times()
